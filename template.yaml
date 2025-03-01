@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Serverless URL Shortener using AWS Lambda, API Gateway, and DynamoDB.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+
+Globals:
+  Function:
+    Timeout: 5
+    MemorySize: 128
+    Runtime: python3.13
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref UrlShortenerTable
+
+Resources:
+  # DynamoDB Table for URL Storage
+  UrlShortenerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "UrlShortener-${Stage}"
+      AttributeDefinitions:
+        - AttributeName: shortId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: shortId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+
+  # Lambda Function to Shorten URLs
+  ShortenUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.shorten
+      CodeUri: ./src/functions/urlShortener/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlShortenerTable
+      Events:
+        ShortenApi:
+          Type: Api
+          Properties:
+            Path: /shorten
+            Method: POST
+
+  # Lambda Function for Redirecting
+  RedirectUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.redirect
+      CodeUri: ./src/functions/urlShortener/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UrlShortenerTable
+      Events:
+        RedirectApi:
+          Type: Api
+          Properties:
+            Path: /{shortId}
+            Method: GET
+
+Outputs:
+  ShortenUrlEndpoint:
+    Description: "Endpoint to shorten URLs"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
+  
+  RedirectUrlEndpoint:
+    Description: "Base URL for redirects (replace {shortId} with actual ID)"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/{shortId}"
