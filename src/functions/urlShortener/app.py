@@ -74,12 +74,29 @@ def forward(event, context):
         return response(404, {"error": "Short URL not found"})
 
     original_url = response_item["Item"]["originalUrl"]
-    data = event.get('body', '{}')
 
-    response = requests.post(original_url, json=data)
-    
+    print(f"Forwarding request to {original_url[:40]}")
 
-    return response(200, {"Webhook forwarded"})
+    # Extract and parse request body
+    raw_data = event.get('body', '{}')
+
+    # Parse the JSON string into a dictionary
+    try:
+        parsed_data = json.loads(raw_data)  # Convert to a Python dictionary
+    except json.JSONDecodeError:
+        print("Invalid JSON data")
+        parsed_data = {}
+
+
+    # Forward headers
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        requests.post(original_url, json=parsed_data, headers=headers, timeout=5)
+    except requests.exceptions.RequestException as e:
+        return response(500, {"error": "Forwarding error", "details": str(e)})
+    print("Webhook forwarded successfully")
+    return response(200, {"message": "Webhook forwarded successfully"})
 
 def is_valid_url(url):
     """Basic URL validation with regex"""
