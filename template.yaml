@@ -8,7 +8,7 @@ Parameters:
   Stage:
     Type: String
     Default: prod
-    AllowedValues: [dev, prod]
+    AllowedValues: [dev, uat, prod]
 
 Globals:
   Function:

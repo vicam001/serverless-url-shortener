@@ -44,3 +44,26 @@ capabilities = "CAPABILITY_IAM"
 disable_rollback = true
 parameter_overrides = "Stage=\"dev\""
 image_repositories = []
+
+[uat.deploy.parameters]
+stack_name = "url-shortener-uat"
+resolve_s3 = true
+s3_prefix = "url-shortener-uat"
+region = "eu-west-1"
+profile = "SuperAdmin"
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "Stage=\"uat\""
+image_repositories = []
+
+[prod.deploy.parameters]
+stack_name = "url-shortener-prod"
+resolve_s3 = true
+s3_prefix = "url-shortener-prod"
+region = "eu-west-1"
+profile = "SuperAdmin"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "Stage=\"prod\""
+image_repositories = []
