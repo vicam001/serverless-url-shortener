@@ -68,10 +68,29 @@ Resources:
             Path: /{shortId}
             Method: GET
 
+  # Lambda Function for forwarding a JSON payload sent to the short url, to the original url
+  ForwardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.forward
+      CodeUri: ./src/functions/urlShortener/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UrlShortenerTable
+      Events:
+        ForwardApi:            
+          Type: Api
+          Properties:
+            Path: /{shortId}
+            Method: POST
+
+
 Outputs:
   ShortenUrlEndpoint:
     Description: "Endpoint to shorten URLs"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
+    Export:
+      Name: !Sub "${AWS::StackName}-ShortenUrlEndpoint"
   
   RedirectUrlEndpoint:
     Description: "Base URL for redirects (replace {shortId} with actual ID)"

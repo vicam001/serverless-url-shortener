@@ -5,6 +5,7 @@ import boto3
 import base64
 import re
 from urllib.parse import urlparse
+import requests
 from botocore.exceptions import BotoCoreError, ClientError
 
 # Initialize AWS resources
@@ -55,6 +56,30 @@ def redirect(event, context):
         "statusCode": 301,
         "headers": {"Location": response_item["Item"]["originalUrl"]}
     }
+
+
+def forward(event, context):
+    """Forwards the POST request to the original URL"""
+    short_id = event.get("pathParameters", {}).get("shortId")
+
+    if not short_id:
+        return response(400, {"error": "Short ID missing"})
+
+    try:
+        response_item = table.get_item(Key={"shortId": short_id})
+    except (BotoCoreError, ClientError) as e:
+        return response(500, {"error": "Database error", "details": str(e)})
+
+    if "Item" not in response_item:
+        return response(404, {"error": "Short URL not found"})
+
+    original_url = response_item["Item"]["originalUrl"]
+    data = event.get('body', '{}')
+
+    response = requests.post(original_url, json=data)
+    
+
+    return response(200, {"Webhook forwarded"})
 
 def is_valid_url(url):
     """Basic URL validation with regex"""
